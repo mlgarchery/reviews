@@ -1,6 +1,8 @@
-# reviews README
+# reviews 
 
-This is the README for your extension "reviews". After writing up a brief description, we recommend including the following sections.
+![Alt text](images/reviews.png)
+
+Compare branches using native VSCode feature.
 
 ## Features
 
