@@ -1,7 +1,7 @@
 {
   "name": "reviews",
   "displayName": "reviews",
-  "description": "Simple git checkout to review the current branch in your editor using VSCode native git integration.",
+  "description": "Simple extension to help reviewing code using VSCode native git integration.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.85.0"
