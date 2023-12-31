@@ -14,8 +14,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "reviews.helloWorld",
-        "title": "Hello World"
+        "command": "reviews.compare",
+        "title": "Compare branch"
       }
     ]
   },

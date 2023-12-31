@@ -13,7 +13,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('reviews.helloWorld', async () => {
+	let disposable = vscode.commands.registerCommand('reviews.compare', async () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
 		const userInput = await vscode.window.showInputBox({
@@ -21,6 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
             placeHolder: "Branch to compare"
         });
 		console.log("log user input: ", userInput);
+
 		vscode.window.showInformationMessage('My command output');
 	});
 
