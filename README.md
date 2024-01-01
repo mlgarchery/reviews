@@ -1,6 +1,6 @@
 # reviews 
 
-![Alt text](images/reviews.png)
+![Alt text](https://github.com/mlgarchery/reviews/blob/main/images/reviews.png)
 
 Compare branches using native VSCode feature.
 

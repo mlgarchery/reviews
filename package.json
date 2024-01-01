@@ -9,8 +9,11 @@
   "categories": [
     "Other"
   ],
-  "publisher": "mlgarchery",
   "icon": "images/reviews.png",
+  "publisher": "mlgarchery",
+  "repository": {
+    "url": "https://github.com/mlgarchery/reviews"
+  },
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
