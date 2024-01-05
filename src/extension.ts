@@ -23,6 +23,10 @@ const  findCurrentBranch = async () => {
 	return result.toString().trim();
 };
 
+const checkoutBranch = async (branch: string) => {
+	execSync(`git checkout ${branch}`);
+};
+
 const resetSoftToCommonCommitAncestor = async (branch: string, compareToBranch: string) => {
 	let command = `ancestor=$(git merge-base ${compareToBranch} ${branch}); `;
 	if(true) {command += "git reset --soft $ancestor";}
@@ -85,6 +89,8 @@ export function activate(context: vscode.ExtensionContext) {
 		};
 		
 		console.log(`${branch}..${compareToBranch}`);
+		
+		checkoutBranch(branch);
 		resetSoftToCommonCommitAncestor(branch, compareToBranch);
 
 		// vscode.window.showInformationMessage('My command output');
