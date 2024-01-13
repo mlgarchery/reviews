@@ -28,8 +28,7 @@ const checkoutBranch = async (branch: string) => {
 };
 
 const resetSoftToCommonCommitAncestor = async (branch: string, compareToBranch: string) => {
-	let command = `ancestor=$(git merge-base ${compareToBranch} ${branch}); `;
-	if(true) {command += "git reset --soft $ancestor";}
+	let command = `ancestor=$(git merge-base ${compareToBranch} ${branch}); git reset --soft $ancestor`;
 	execSync(command);
 };
 
@@ -91,13 +90,27 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log(`${branch}..${compareToBranch}`);
 		
 		checkoutBranch(branch);
+		// get branch current commit ref
+		const branchHeadCommit = execSync(`git rev-parse ${branch}`).toString().trim();
+		context.workspaceState.update("branchHeadCommit", branchHeadCommit);
 		resetSoftToCommonCommitAncestor(branch, compareToBranch);
 
 		// vscode.window.showInformationMessage('My command output');
 		vscode.commands.executeCommand('workbench.view.scm');
 	});
 
+	let disposable2 = vscode.commands.registerCommand('reviews.reset', async () => {
+		setWorkspacePath();
+		const branchHeadCommit = context.workspaceState.get("branchHeadCommit");
+		if(!branchHeadCommit) {
+			vscode.window.showErrorMessage("No branch head commit found.");
+			return;
+		}
+		execSync(`git reset --hard ${branchHeadCommit}`);
+	});
+	
 	context.subscriptions.push(disposable);
+	context.subscriptions.push(disposable2);
 }
 
 // This method is called when your extension is deactivated

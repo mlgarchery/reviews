@@ -20,7 +20,11 @@
     "commands": [
       {
         "command": "reviews.compare",
-        "title": "Compare branch"
+        "title": "reviews: Compare branches"
+      },
+      {
+        "command": "reviews.reset",
+        "title": "reviews: Reset branch"
       }
     ]
   },
