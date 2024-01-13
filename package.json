@@ -34,9 +34,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test",
-    "login": "vsce login mlgarchery",
-    "publish": "vsce publish"
+    "test": "vscode-test"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
