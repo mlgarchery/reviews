@@ -2,7 +2,7 @@
   "name": "reviews",
   "displayName": "reviews",
   "description": "Simple extension to help reviewing code using VSCode native git integration.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "engines": {
     "vscode": "^1.85.0"
   },
