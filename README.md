@@ -3,14 +3,20 @@
 
 Compare branches using native VSCode feature.
 
-```mermaid
-graph TD;
-    main_ancestor-->main_commit1;
-    main_ancestor-->branch_commit1;
-    branch_commit1-->branch_commit2;
+```
+                   main
+                    │
+                    │
+                ┌───x main_ancestor
+                │   │
+                │   ▼
+branch_commit1  x   x main_newcommit
+                │
+                ▼
+branch_commit2  x
 ```
 
-As in GitHub pull request, the branch is compared to main branch before new commits were added to it (main_ancestor). Said differently, all changes from main_ancestor to branch_commit2 are shown.
+As in GitHub pull request, the branch is compared to main before new commits were added to it (main_ancestor). Said differently, all changes from main_ancestor to branch_commit2 are shown.
 
 ## Features
 
@@ -21,7 +27,7 @@ This command fetch the branch, `reset --soft` to the last common ancestor of the
 
 
 It store the branch last commit (branch_commit2 in the example)so you can come back to it using the reset command.
-* `reviews.reset` - reset the comparison. Comes back to the branch latest commit.
+* `reviews.reset` - reset the comparison. Comes back to the branch last commit.
 
 ## Release Notes
 
