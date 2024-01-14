@@ -1,9 +1,9 @@
 # ![Alt text](https://raw.githubusercontent.com/mlgarchery/reviews/main/images/reviews.png) reviews
 
-
 Do reviews in VSCode comparing branches using its native git source control view.
 
 Example:
+
 ```
                    main
                     │
@@ -22,20 +22,21 @@ As in GitHub pull requests, the branch is compared to main before new commits we
 ## Features
 
 Two commands are available:
-* `reviews.compare`: compare two branches. You need to provide the branch name you want to compare with main. This command:
-  * fetch the branch
-  * find the branches common ancestor (*main_ancestor*)
-  * reset --soft the branch to the common ancestor
-  * switch to the VSCode source control view
+
+- `reviews.compare`: compare two branches. You need to provide the branch name you want to compare with main. This command:
+
+  - fetch and update the two branches (if a remote exists)
+  - find the branches common ancestor (_main_ancestor_)
+  - reset --soft the branch to the common ancestor
+  - switch to the VSCode source control view
 
   If you want to compare with another branch than main, you can type `{branchName}..{anotherBranchThanMain}`, ex. `fix/typo..develop`.
-  The command also stores the branch last commit (*branch_commit2*) workspace wise so you can come back to it using the reset command.
+  The command also stores the branch last commit (_branch_commit2_) workspace wise so you can come back to it using the reset command.
 
-* `reviews.reset`:  reset the comparison. Comes back to the branch last commit.
+- `reviews.reset`: reset the comparison. Comes back to the branch last commit.
 
 ## Release Notes
 
 ### 0.0.3
 
 Add reviews.reset command.
-
