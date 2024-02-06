@@ -25,7 +25,7 @@ const switchAndSyncBranch = (branch: string) => {
   try {
     execSync(`git switch --guess ${branch};`);
   } catch (error) {
-    const msg = `Branch ${branch} does not exist`;
+    const msg = `Branch ${branch} does not exist or could not get checkout to. ${error}`;
     throw Error(msg); // stops command execution
   }
   // pull branch latest changes if a remote is set
@@ -34,9 +34,7 @@ const switchAndSyncBranch = (branch: string) => {
     try {
       execSync(`git pull`);
     } catch (error) {
-      throw Error(
-        `Unable to pull latest changes on ${branch}. Details: ${error}`
-      );
+      throw Error(`Unable to pull latest changes on ${branch}. ${error}`);
     }
   }
 };
@@ -144,7 +142,9 @@ export function activate(context: vscode.ExtensionContext) {
         );
         return;
       }
-      execSync(`git reset --hard ${branchHeadCommit}`);
+      execSync(
+        `git checkout ${branch} && git reset --hard ${branchHeadCommit}`
+      );
       vscode.window.showInformationMessage(
         `Reset to ${branch} head commit ${branchHeadCommit}.`
       );
