@@ -21,6 +21,14 @@ const findCurrentBranch = () => {
   return execSync("git branch --show-current").toString().trim();
 };
 
+/**
+ * Returns the last commit first 7 chars of the branch.
+ * @param branch
+ */
+const getLastCommitOnBranch = (branch: string) => {
+  return execSync(`git rev-parse ${branch}`).toString().trim().slice(0, 7);
+};
+
 const switchAndSyncBranch = (branch: string) => {
   try {
     execSync(`git switch --guess ${branch};`);
@@ -50,6 +58,36 @@ const resetSoftToCommonCommitAncestor = (
   return commonAncestor;
 };
 
+const resetBranch = async (
+  context: vscode.ExtensionContext,
+  showMessage: boolean = false
+) => {
+  setWorkspacePath();
+  const branchHeadCommit = context.workspaceState.get("branchHeadCommit");
+  const branch = context.workspaceState.get("branch");
+
+  if (!branchHeadCommit || !branch) {
+    if (showMessage) {
+      vscode.window.showErrorMessage(
+        "No previously reviewed head commit found."
+      );
+    }
+    return;
+  }
+
+  const lastCommitOnBranch = getLastCommitOnBranch(branch as unknown as string);
+  if (branchHeadCommit === lastCommitOnBranch) {
+    return;
+  }
+
+  execSync(`git checkout ${branch} && git reset --hard ${branchHeadCommit}`);
+  if (showMessage) {
+    vscode.window.showInformationMessage(
+      `Reset to ${branch} head commit ${branchHeadCommit}.`
+    );
+  }
+};
+
 // const getBranches = () => {
 // 	return execSync("git for-each-ref --format='%(refname:short)' refs/heads/").toString().trim().split('\n');
 // };
@@ -70,6 +108,10 @@ export function activate(context: vscode.ExtensionContext) {
     async () => {
       // The code you place here will be executed every time your command is executed
       // Display a message box to the user
+
+      // if the compare command has already been executed on a branch, we reset the other branch
+      await resetBranch(context);
+
       setWorkspacePath();
 
       const inputBranch = await vscode.window.showInputBox({
@@ -98,10 +140,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       // get branch current commit ref
-      const branchHeadCommit = execSync(`git rev-parse ${branch}`)
-        .toString()
-        .trim()
-        .slice(0, 7);
+      const branchHeadCommit = getLastCommitOnBranch(branch);
       const commonAncestor = resetSoftToCommonCommitAncestor(
         branch,
         compareToBranch
@@ -132,23 +171,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   let resetDisposable = vscode.commands.registerCommand(
     "reviews.reset",
-    async () => {
-      setWorkspacePath();
-      const branchHeadCommit = context.workspaceState.get("branchHeadCommit");
-      const branch = context.workspaceState.get("branch");
-      if (!branchHeadCommit || !branch) {
-        vscode.window.showErrorMessage(
-          "No previously reviewed head commit found."
-        );
-        return;
-      }
-      execSync(
-        `git checkout ${branch} && git reset --hard ${branchHeadCommit}`
-      );
-      vscode.window.showInformationMessage(
-        `Reset to ${branch} head commit ${branchHeadCommit}.`
-      );
-    }
+    async () => resetBranch(context, true)
   );
 
   context.subscriptions.push(compareDisposable);
