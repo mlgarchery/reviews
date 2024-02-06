@@ -37,6 +37,11 @@ Two commands are available:
 
 ## Release Notes
 
+### 0.2.0
+
+- Reset branch prior to comparing.
+- Fix a bug where when comparing twice then resetting, the --hard reset was done on main and thus the commits of the branch added to main.
+
 ### 0.0.3
 
-Add reviews.reset command.
+- Add reviews.reset command.
