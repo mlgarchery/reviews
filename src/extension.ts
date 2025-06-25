@@ -29,33 +29,37 @@ const getLastCommitOnBranch = (branch: string) => {
   return execSync(`git rev-parse ${branch}`).toString().trim().slice(0, 7);
 };
 
-const switchAndSyncBranch = (branch: string) => {
-  try {
-    execSync(`git switch --guess ${branch};`);
-  } catch (error) {
-    const msg = `Branch ${branch} does not exist or could not get checkout to. ${error}`;
-    throw Error(msg); // stops command execution
-  }
-  // pull branch latest changes if a remote is set
-  const remotes = execSync("git remote").toString().trim(); // should return a list of remote repos if any
+const getLatestChangesFromRemoteBranches = (
+  branch: string,
+  branch2: string
+) => {
+  const remotes = execSync("git remote").toString().trim();
   if (remotes) {
-    try {
-      execSync(`git pull`);
-    } catch (error) {
-      throw Error(`Unable to pull latest changes on ${branch}. ${error}`);
-    }
+    execSync(
+      `git fetch --quiet origin ${branch}:${branch} ${branch2}:${branch2} 2>/dev/null || true`
+    );
   }
 };
 
-const resetSoftToCommonCommitAncestor = (
-  branch: string,
-  compareToBranch: string
-) => {
-  const commonAncestor = execSync(`git merge-base ${compareToBranch} ${branch}`)
+const enterDetachedHeadMode = (branch: string, branchCommit: string) => {
+  try {
+    // Checkout the commit hash directly to enter detached HEAD mode
+    execSync(`git checkout ${branchCommit}`);
+  } catch (error) {
+    const msg = `Failed to checkout in detached HEAD to ${branch}'s latest commit. ${error}`;
+    throw Error(msg);
+  }
+};
+
+const getCommonAncestorCommit = (branch: string, compareToBranch: string) => {
+  return execSync(`git merge-base ${compareToBranch} ${branch}`)
     .toString()
     .trim();
+};
+
+const resetSoftToCommonCommitAncestor = (commonAncestor: string) => {
+  // Reset soft to common ancestor while in detached HEAD
   execSync(`git reset --soft ${commonAncestor}`);
-  return commonAncestor;
 };
 
 const resetBranch = async (
@@ -63,34 +67,24 @@ const resetBranch = async (
   showMessage: boolean = false
 ) => {
   setWorkspacePath();
-  const branchHeadCommit = context.workspaceState.get("branchHeadCommit");
   const branch = context.workspaceState.get("branch");
 
-  if (!branchHeadCommit || !branch) {
+  if (!branch) {
     if (showMessage) {
-      vscode.window.showErrorMessage(
-        "No previously reviewed head commit found."
-      );
+      vscode.window.showInformationMessage("No branch being compared found.");
     }
     return;
   }
 
-  const lastCommitOnBranch = getLastCommitOnBranch(branch as unknown as string);
-  if (branchHeadCommit === lastCommitOnBranch) {
-    return;
-  }
+  execSync(`git switch ${branch}`);
+  context.workspaceState.update("branch", undefined);
 
-  execSync(`git checkout ${branch} && git reset --hard ${branchHeadCommit}`);
   if (showMessage) {
     vscode.window.showInformationMessage(
-      `Reset to ${branch} head commit ${branchHeadCommit}.`
+      `Switched back to branch ${branch} and out of detached HEAD mode.`
     );
   }
 };
-
-// const getBranches = () => {
-// 	return execSync("git for-each-ref --format='%(refname:short)' refs/heads/").toString().trim().split('\n');
-// };
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -135,23 +129,20 @@ export function activate(context: vscode.ExtensionContext) {
         }
       }
 
-      for (const b of [compareToBranch, branch]) {
-        switchAndSyncBranch(b);
-      }
+      getLatestChangesFromRemoteBranches(branch, compareToBranch);
 
       // get branch current commit ref
       const branchHeadCommit = getLastCommitOnBranch(branch);
-      const commonAncestor = resetSoftToCommonCommitAncestor(
-        branch,
-        compareToBranch
-      ).slice(0, 7);
+      const commonAncestor = getCommonAncestorCommit(branch, compareToBranch);
+      enterDetachedHeadMode(branch, branchHeadCommit);
+      resetSoftToCommonCommitAncestor(commonAncestor);
+
       if (branchHeadCommit === commonAncestor) {
         vscode.window.showInformationMessage(
           `No changes on ${branch} since ${compareToBranch}`
         );
         return;
       }
-      context.workspaceState.update("branchHeadCommit", branchHeadCommit);
       context.workspaceState.update("branch", branch);
 
       vscode.commands.executeCommand("workbench.view.scm");
