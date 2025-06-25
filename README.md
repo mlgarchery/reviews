@@ -37,6 +37,12 @@ Two commands are available:
 
 ## Release Notes
 
+### 0.3.2
+
+- short commit displayed are now consistently of length 8 everywhere
+- add MIT licence
+- exclude some file from final extension package
+
 ### 0.3.0
 
 - Using detached HEAD mode to prevent polluting the repository state.
