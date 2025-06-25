@@ -41,7 +41,7 @@ const findCurrentBranch = () => {
  * @param branch
  */
 const getLastCommitOnBranch = (branch: string) => {
-  return execSync(`git rev-parse ${branch}`).toString().trim().slice(0, 7);
+  return execSync(`git rev-parse ${branch}`).toString().trim().slice(0, 8);
 };
 
 const getLatestChangesFromRemoteBranches = (
@@ -69,7 +69,8 @@ const enterDetachedHeadMode = (branch: string, branchCommit: string) => {
 const getCommonAncestorCommit = (branch: string, compareToBranch: string) => {
   return execSync(`git merge-base ${compareToBranch} ${branch}`)
     .toString()
-    .trim();
+    .trim()
+    .slice(0, 8);
 };
 
 const resetSoftToCommonCommitAncestor = (commonAncestor: string) => {
