@@ -3,6 +3,21 @@
 import { execSync } from "child_process";
 import * as vscode from "vscode";
 
+export const parseBranchNames = (
+  input: string | undefined,
+  currentBranch: string
+) => {
+  let [branch, compareToBranch] = (input ?? "").split("..");
+  if (!branch) {
+    branch = currentBranch;
+  }
+  if (!compareToBranch) {
+    compareToBranch = "main";
+  }
+  console.log(branch, compareToBranch);
+  return [branch, compareToBranch];
+};
+
 /**
  * Set current path for shells command to the current workspace folder path
  */
@@ -108,27 +123,14 @@ export function activate(context: vscode.ExtensionContext) {
 
       setWorkspacePath();
 
-      const inputBranch = await vscode.window.showInputBox({
+      const input = await vscode.window.showInputBox({
         prompt: "Enter a branch name",
         placeHolder: "Branch to compare with main (default is current branch)",
       });
 
-      // By default the branch to compare to is the "main" branch
-      // to compare to something else than main, the syntax is <branch>..<compare_to_branch>
-      // if nothing is inputed, default behaviour is <current_branch>..main
       const currentBranch = findCurrentBranch();
 
-      let compareToBranch = "main";
-      let branch = currentBranch;
-
-      if (inputBranch) {
-        if (inputBranch.split("..").length === 2) {
-          [branch, compareToBranch] = inputBranch.split("..");
-        } else {
-          branch = inputBranch;
-        }
-      }
-
+      const [branch, compareToBranch] = parseBranchNames(input, currentBranch);
       getLatestChangesFromRemoteBranches(branch, compareToBranch);
 
       // get branch current commit ref

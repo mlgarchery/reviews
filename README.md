@@ -23,23 +23,24 @@ As in GitHub pull requests, the branch is compared to main before new commits we
 
 Two commands are available:
 
-- `reviews.compare`: compare two branches. You need to provide the branch name you want to compare with main. This command:
+- `reviews.compare`: compare two branches. You need to provide the branch name you want to compare with main. If you don't the current branch will be used. This command:
 
-  - fetch and update the two branches (if a remote exists)
+  - fetch the two branches last changes (if a remote exists, otherwise the local branch is used)
   - find the branches common ancestor (_main_ancestor_)
-  - reset --soft the branch to the common ancestor
+  - reset --soft the branch to the common ancestor in detached HEAD mode (you can't mess your history there).
   - switch to the VSCode source control view
 
-  If you want to compare with another branch than main, you can type `{branchName}..{anotherBranchThanMain}`, ex. `fix/typo..develop`.
-  The command also stores the branch last commit (_branch_commit2_) workspace wise so you can come back to it using the reset command.
+  If you want to compare with another branch than main, you can type `{branchName}..{anotherBranchThanMain}`, ex. `fix/typo..develop`. You can also use the syntax `..dev` if you want to compare the current branch with the `dev` branch.
+  The command stores the `branchName` so you can switch back to it later with the reset command.
 
-- `reviews.reset`: reset the comparison. Comes back to the branch last commit.
+- `reviews.reset`: comes back to the branch state previous to the comparison, and go out of the detached HEAD mode.
 
 ## Release Notes
 
 ### 0.3.0
 
 - Using detached HEAD mode to prevent polluting the repository state.
+- `..dev` syntax to quickly change the base branch is now possible
 
 ### 0.2.0
 
