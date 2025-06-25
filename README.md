@@ -37,6 +37,10 @@ Two commands are available:
 
 ## Release Notes
 
+### 0.3.0
+
+- Using detached HEAD mode to prevent polluting the repository state.
+
 ### 0.2.0
 
 - Reset branch prior to comparing.
