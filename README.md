@@ -37,6 +37,10 @@ Two commands are available:
 
 ## Release Notes
 
+### 0.3.3
+
+- fix an issue where refs used where not from the remote
+
 ### 0.3.2
 
 - short commit displayed are now consistently of length 8 everywhere

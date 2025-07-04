@@ -36,22 +36,37 @@ const findCurrentBranch = () => {
   return execSync("git branch --show-current").toString().trim();
 };
 
+// Returns `origin/branch` if it exists on the remote else returns `branch`
+const getRemoteBranch = (branch: string) => {
+  const remoteRef = `refs/remotes/origin/${branch}`;
+  try {
+    execSync(`git show-ref --verify --quiet ${remoteRef}`).toString().trim(); // throws if ref is not found
+    return `origin/${branch}`;
+  } catch {
+    return branch;
+  }
+};
 /**
- * Returns the last commit first 7 chars of the branch.
+ * Returns the last commit first 8 chars of the branch.
  * @param branch
  */
 const getLastCommitOnBranch = (branch: string) => {
-  return execSync(`git rev-parse ${branch}`).toString().trim().slice(0, 8);
+  const remoteBranch = getRemoteBranch(branch);
+  return execSync(`git rev-parse ${remoteBranch}`)
+    .toString()
+    .trim()
+    .slice(0, 8);
 };
 
-const getLatestChangesFromRemoteBranches = (
+// Fetches latest changes from both branches.
+const fetchLatestChangesFromRemoteBranches = (
   branch: string,
   branch2: string
 ) => {
   const remotes = execSync("git remote").toString().trim();
   if (remotes) {
     execSync(
-      `git fetch --quiet origin ${branch}:${branch} ${branch2}:${branch2} 2>/dev/null || true`
+      `git fetch --quiet origin ${branch} ${branch2} 2>/dev/null || true`
     );
   }
 };
@@ -59,7 +74,7 @@ const getLatestChangesFromRemoteBranches = (
 const enterDetachedHeadMode = (branch: string, branchCommit: string) => {
   try {
     // Checkout the commit hash directly to enter detached HEAD mode
-    execSync(`git checkout ${branchCommit}`);
+    execSync(`git checkout --detach ${branchCommit}`);
   } catch (error) {
     const msg = `Failed to checkout in detached HEAD to ${branch}'s latest commit. ${error}`;
     throw Error(msg);
@@ -67,7 +82,13 @@ const enterDetachedHeadMode = (branch: string, branchCommit: string) => {
 };
 
 const getCommonAncestorCommit = (branch: string, compareToBranch: string) => {
-  return execSync(`git merge-base ${compareToBranch} ${branch}`)
+  // Get remote branches if they exist
+  const [remoteBranch, remoteCompareToBranch] = [
+    getRemoteBranch(branch),
+    getRemoteBranch(compareToBranch),
+  ];
+
+  return execSync(`git merge-base ${remoteCompareToBranch} ${remoteBranch}`)
     .toString()
     .trim()
     .slice(0, 8);
@@ -132,9 +153,8 @@ export function activate(context: vscode.ExtensionContext) {
       const currentBranch = findCurrentBranch();
 
       const [branch, compareToBranch] = parseBranchNames(input, currentBranch);
-      getLatestChangesFromRemoteBranches(branch, compareToBranch);
+      fetchLatestChangesFromRemoteBranches(branch, compareToBranch);
 
-      // get branch current commit ref
       const branchHeadCommit = getLastCommitOnBranch(branch);
       const commonAncestor = getCommonAncestorCommit(branch, compareToBranch);
       enterDetachedHeadMode(branch, branchHeadCommit);
