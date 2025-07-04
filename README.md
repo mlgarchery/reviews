@@ -39,7 +39,7 @@ Two commands are available:
 
 ### 0.3.5
 
-- reverting to switching to branch insead of "branch prior to comparison", as the staged changed were kept after the reset.
+- reverting to switching to branch instead of "branch prior to comparison", as the staged changes were kept after the reset.
 
 ### 0.3.4
 
