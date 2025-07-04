@@ -103,7 +103,6 @@ const resetBranch = async (
   context: vscode.ExtensionContext,
   showMessage: boolean = false
 ) => {
-  setWorkspacePath();
   const branch = context.workspaceState.get("branch");
 
   if (!branch) {
@@ -139,11 +138,9 @@ export function activate(context: vscode.ExtensionContext) {
     async () => {
       // The code you place here will be executed every time your command is executed
       // Display a message box to the user
-
-      // if the compare command has already been executed on a branch, we reset the other branch
-      await resetBranch(context);
-
       setWorkspacePath();
+
+      await resetBranch(context);
 
       const input = await vscode.window.showInputBox({
         prompt: "Enter a branch name",
@@ -185,7 +182,10 @@ export function activate(context: vscode.ExtensionContext) {
 
   let resetDisposable = vscode.commands.registerCommand(
     "reviews.reset",
-    async () => resetBranch(context, true)
+    async () => {
+      setWorkspacePath();
+      resetBranch(context, true);
+    }
   );
 
   context.subscriptions.push(compareDisposable);
