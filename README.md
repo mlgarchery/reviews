@@ -37,6 +37,10 @@ Two commands are available:
 
 ## Release Notes
 
+### 0.3.5
+
+- reverting to switching to branch insead of "branch prior to comparison", as the staged changed were kept after the reset.
+
 ### 0.3.4
 
 - now reseting by switching to the branch prior to the comparison, not the branch we compare (more stable)

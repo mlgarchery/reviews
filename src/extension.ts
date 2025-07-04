@@ -103,21 +103,21 @@ const resetBranch = async (
   context: vscode.ExtensionContext,
   showMessage: boolean = false
 ) => {
-  const currentBranch = context.workspaceState.get("currentBranch");
+  const branch = context.workspaceState.get("branch");
 
-  if (!currentBranch) {
+  if (!branch) {
     if (showMessage) {
       vscode.window.showInformationMessage("No branch being compared found.");
     }
     return;
   }
 
-  execSync(`git switch ${currentBranch}`);
-  context.workspaceState.update("currentBranch", undefined);
+  execSync(`git switch ${branch}`);
+  context.workspaceState.update("branch", undefined);
 
   if (showMessage) {
     vscode.window.showInformationMessage(
-      `Switched back to branch ${currentBranch} and out of detached HEAD mode.`
+      `Switched back to branch ${branch} and out of detached HEAD mode.`
     );
   }
 };
@@ -147,15 +147,16 @@ export function activate(context: vscode.ExtensionContext) {
         placeHolder: "Branch to compare with main (default is current branch)",
       });
 
-      // save current branch before enterind detached HEAD mode
       const currentBranch = findCurrentBranch();
-      context.workspaceState.update("currentBranch", currentBranch);
 
       const [branch, compareToBranch] = parseBranchNames(input, currentBranch);
       fetchLatestChangesFromRemoteBranches(branch, compareToBranch);
 
       const branchHeadCommit = getLastCommitOnBranch(branch);
       const commonAncestor = getCommonAncestorCommit(branch, compareToBranch);
+
+      // save current branch before enterind detached HEAD mode
+      context.workspaceState.update("branch", branch);
 
       enterDetachedHeadMode(branch, branchHeadCommit);
       resetSoftToCommonCommitAncestor(commonAncestor);
