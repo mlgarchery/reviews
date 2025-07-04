@@ -37,6 +37,11 @@ Two commands are available:
 
 ## Release Notes
 
+### 0.3.4
+
+- now reseting by switching to the branch prior to the comparison, not the branch we compare (more stable)
+- fix unwanted change introduced just before in v0.3.3 related to `git --detach` causing staged changes not to be cleared properly
+
 ### 0.3.3
 
 - fix an issue where refs used where not from the remote

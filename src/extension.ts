@@ -74,7 +74,7 @@ const fetchLatestChangesFromRemoteBranches = (
 const enterDetachedHeadMode = (branch: string, branchCommit: string) => {
   try {
     // Checkout the commit hash directly to enter detached HEAD mode
-    execSync(`git checkout --detach ${branchCommit}`);
+    execSync(`git checkout ${branchCommit}`);
   } catch (error) {
     const msg = `Failed to checkout in detached HEAD to ${branch}'s latest commit. ${error}`;
     throw Error(msg);
