@@ -37,15 +37,18 @@
       },
       {
         "command": "reviews.firstParentGraph.refresh",
-        "title": "reviews: Refresh First-Parent Graph"
+        "title": "Refresh First-Parent Graph",
+        "when": "false"
       },
       {
         "command": "reviews.firstParentGraph.copySha",
-        "title": "review: Copy Commit SHA"
+        "title": "Copy Commit SHA",
+        "when": "false"
       },
       {
         "command": "reviews.firstParentGraph.showCommit",
-        "title": "reviews: Show Commit (git show)"
+        "title": "Show Commit (git show)",
+        "when": "false"
       }
     ],
     "menus": {
