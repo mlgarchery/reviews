@@ -17,6 +17,20 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "properties": {
+        "firstParentGraph.baseBranch": {
+          "type": "string",
+          "default": "auto",
+          "description": "Base branch to compare against (e.g., 'main', 'origin/main'). 'auto' tries origin/HEAD → origin/main → main → origin/master → master."
+        },
+        "firstParentGraph.onlyBranchCommitsByDefault": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show only commits not on the base branch by default."
+        }
+      }
+    },
     "views": {
       "scm": [
         {
@@ -34,6 +48,10 @@
       {
         "command": "reviews.reset",
         "title": "reviews: Reset branch"
+      },
+      {
+        "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
+        "title": "Toggle: Only Commits Not On Base"
       },
       {
         "command": "reviews.firstParentGraph.refresh",
@@ -54,9 +72,9 @@
     "menus": {
       "view/title": [
         {
-          "command": "reviews.firstParentGraph.refresh",
+          "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
           "when": "view == reviews.firstParentGraph",
-          "group": "navigation"
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [

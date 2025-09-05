@@ -13,9 +13,6 @@ interface CommitItem {
   parents: string[]; // length > 1 => merge commit
 }
 
-// Cache folded results per merge commit
-type FoldedCache = Map<string, FoldedSection[]>;
-
 interface FoldedSection {
   parentSha: string; // non-first parent sha
   commits: CommitItem[]; // oldest -> newest along ancestry path
@@ -82,13 +79,18 @@ export class FirstParentProvider
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   private commits: CommitItem[] = [];
-  private foldedCache: FoldedCache = new Map();
+  private foldedCache: Map<string, FoldedSection[]> = new Map();
+  private onlyBranch = vscode.workspace
+    .getConfiguration("firstParentGraph")
+    .get<boolean>("onlyBranchCommitsByDefault", true);
+  private baseRef: string | undefined;
 
   constructor(public readonly repoRoot?: string) {}
 
-  refresh() {
-    this.load().finally(() => this._onDidChangeTreeData.fire());
-    this.load().finally(() => this._onDidChangeTreeData.fire());
+  async refresh() {
+    this.foldedCache.clear();
+    await this.load();
+    this._onDidChangeTreeData.fire();
   }
 
   async load() {
@@ -96,19 +98,35 @@ export class FirstParentProvider
       this.commits = [];
       return;
     }
+
+    // Resolve base ref (config overrides auto)
+    const cfgBase = vscode.workspace
+      .getConfiguration("firstParentGraph")
+      .get<string>("baseBranch", "auto");
+    this.baseRef =
+      cfgBase && cfgBase !== "auto"
+        ? cfgBase
+        : await inferBaseRef(this.repoRoot);
+
     try {
-      // --first-parent folds other-parent history by design; we still see the merge commit.
-      // Using ASCII unit separators for robust parsing.
       const format = ["%H", "%P", "%s", "%an", "%cr"].join("%x1f") + "%x1e";
-      const out = await execGit(
-        [
-          "log",
-          "--first-parent",
-          "--max-count=300",
-          `--pretty=format:${format}`,
-        ],
-        this.repoRoot
-      );
+      const args = [
+        "log",
+        "--first-parent",
+        "--max-count=300",
+        `--pretty=format:${format}`,
+      ];
+
+      // Use an output channel for debugging in VSCode:
+      // const outputChannel = vscode.window.createOutputChannel("reviews");
+      // outputChannel.appendLine("ONLYBRANCH:" + this.onlyBranch);
+      // outputChannel.appendLine("baseRef:" + this.baseRef);
+
+      if (this.onlyBranch && this.baseRef) {
+        args.push(`${this.baseRef}..HEAD`);
+      }
+
+      const out = await execGit(args, this.repoRoot);
       this.commits = parseLog(out);
     } catch (e: any) {
       vscode.window.showErrorMessage(
@@ -118,12 +136,26 @@ export class FirstParentProvider
     }
   }
 
-  getTreeItem(element: CommitTreeItem): vscode.TreeItem {
+  getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
     return element;
   }
 
-  async getChildren(element?: CommitTreeItem): Promise<vscode.TreeItem[]> {
+  async getChildren(element?: vscode.TreeItem): Promise<vscode.TreeItem[]> {
     if (!element) {
+      if (this.commits.length === 0) {
+        const msg = new vscode.TreeItem(
+          this.onlyBranch
+            ? `No commits unique to ${this.baseRef ?? "base"}`
+            : "No commits found",
+          vscode.TreeItemCollapsibleState.None
+        );
+        msg.iconPath = new vscode.ThemeIcon("info");
+        msg.tooltip = this.onlyBranch
+          ? "Switch off the base filter to see full first-parent history."
+          : undefined;
+        return [msg];
+      }
+
       return this.commits.map((c) => {
         const isMerge = c.parents.length > 1;
         const label = `${c.subject}`;
@@ -187,7 +219,6 @@ export class FirstParentProvider
           "This merge didn’t bring additional non-first-parent commits.";
         return [tip];
       }
-
       return children;
     }
 
@@ -237,14 +268,6 @@ export class FirstParentProvider
 
     this.foldedCache.set(merge.sha, sections);
     return sections;
-  }
-
-  private async getFoldedSectionsByMergeSha(
-    mergeSha: string
-  ): Promise<FoldedSection[]> {
-    const found = this.commits.find((c) => c.sha === mergeSha);
-    if (!found) return [];
-    return this.getFoldedSections(found);
   }
 }
 
@@ -315,4 +338,34 @@ export function parseLog(raw: string): CommitItem[] {
     const parents = (p || "").trim() ? p.trim().split(/\s+/) : [];
     return { sha: h, subject: s, author: an, date: cr, parents };
   });
+}
+
+async function refExists(ref: string, cwd?: string): Promise<boolean> {
+  try {
+    await execGit(["rev-parse", "--verify", "--quiet", `${ref}^{commit}`], cwd);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function inferBaseRef(cwd?: string): Promise<string | undefined> {
+  // 1) origin/HEAD → e.g. "origin/main"
+  try {
+    const head = (
+      await execGit(
+        ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"],
+        cwd
+      )
+    ).trim();
+    if (head && (await refExists(head, cwd))) return head;
+  } catch {
+    return "main";
+  }
+
+  // 2) Common fallbacks
+  const candidates = ["origin/main", "main", "origin/master", "master"];
+  for (const c of candidates) if (await refExists(c, cwd)) return c;
+
+  return undefined;
 }
