@@ -67,6 +67,10 @@
         "command": "reviews.firstParentGraph.showCommit",
         "title": "Show Commit (git show)",
         "when": "false"
+      },
+      {
+        "command": "reviews.firstParentGraph.openCommitChanges",
+        "title": "Open Commit Changes"
       }
     ],
     "menus": {

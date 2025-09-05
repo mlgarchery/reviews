@@ -2,13 +2,16 @@
 // Import the module and reference it with the alias vscode in your code below
 import { execSync } from "child_process";
 import * as vscode from "vscode";
+import * as path from "path";
 import {
+  CommitItem,
   CommitTreeItem,
   FirstParentProvider,
   execGit,
   headFileWatcher,
   pickRepositoryRoot,
 } from "./firstParentGraph";
+import { Change, parseNameStatus, toGitUri } from "./showCommitChanges";
 
 export const parseBranchNames = (
   input: string | undefined,
@@ -249,6 +252,101 @@ export async function activate(context: vscode.ExtensionContext) {
         const mode = provider["onlyBranch"] ? "ON" : "OFF";
         vscode.window.setStatusBarMessage(`Only-branch filter: ${mode}`, 2000);
         await provider.refresh();
+      }
+    ),
+    vscode.commands.registerCommand(
+      "reviews.firstParentGraph.openCommitChanges",
+      async (commit?: CommitItem) => {
+        const sha = commit?.sha;
+        if (!sha || !provider.repoRoot) return;
+
+        try {
+          // Use first-parent semantics for merges so the diff is vs parent #1
+          const raw = await execGit(
+            [
+              "show",
+              "--first-parent",
+              "--name-status",
+              "-M",
+              "-C",
+              "--pretty=format:",
+              sha,
+            ],
+            provider.repoRoot
+          );
+          const changes = parseNameStatus(raw);
+
+          if (changes.length === 0) {
+            vscode.window.showInformationMessage(
+              "This commit has no file changes."
+            );
+            return;
+          }
+
+          const items = changes.map((c) => ({
+            label: `${c.status.padEnd(5)} ${
+              c.oldPath ? `${c.oldPath} → ${c.path}` : c.path
+            }`,
+            change: c,
+          }));
+
+          const pick = await vscode.window.showQuickPick(
+            [
+              {
+                label: "$(go-to-file) Open ALL (caution)",
+                change: undefined as any,
+              },
+              ...items,
+            ],
+            { placeHolder: `Files changed in ${sha.slice(0, 7)}` }
+          );
+          if (!pick) return;
+
+          const openOne = async (c: Change) => {
+            // Parent (#1) vs commit
+            const parentRef = `${sha}^1`;
+
+            // Choose paths for left/right sides
+            const isRename = c.status.startsWith("R");
+            const isCopy = c.status.startsWith("C");
+            const isDelete = c.status.startsWith("D");
+            const leftPath =
+              (isRename || isCopy || isDelete) && c.oldPath
+                ? c.oldPath
+                : c.path;
+            const rightPath = c.path;
+
+            const left = toGitUri(
+              path.join(provider.repoRoot!, leftPath),
+              parentRef
+            );
+            const right = toGitUri(
+              path.join(provider.repoRoot!, rightPath),
+              sha
+            );
+
+            const title = `${c.status} ${c.oldPath ? `${c.oldPath} → ` : ""}${
+              c.path
+            } @ ${sha.slice(0, 7)}`;
+            await vscode.commands.executeCommand(
+              "vscode.diff",
+              left,
+              right,
+              title
+            );
+          };
+
+          if (!pick.change) {
+            // Open all (in series). You can throttle or cap if you prefer.
+            for (const c of changes) await openOne(c);
+          } else {
+            await openOne(pick.change);
+          }
+        } catch (e: any) {
+          vscode.window.showErrorMessage(
+            `Failed to open commit changes: ${e?.message ?? e}`
+          );
+        }
       }
     )
   );

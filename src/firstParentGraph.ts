@@ -5,7 +5,7 @@ import * as fs from "fs";
 
 type Maybe<T> = T | undefined;
 
-interface CommitItem {
+export interface CommitItem {
   sha: string;
   subject: string;
   author: string;
@@ -181,11 +181,11 @@ export class FirstParentProvider
         ].join("\n");
 
         // We can add a command on click on the element
-        // item.command = {
-        //   command: "reviews.firstParentGraph.showCommit",
-        //   title: "Show Commit",
-        //   arguments: [item],
-        // };
+        item.command = {
+          command: "reviews.firstParentGraph.openCommitChanges",
+          title: "Open Commit Changes",
+          arguments: [{ ...item }],
+        };
         return item;
       });
     }
