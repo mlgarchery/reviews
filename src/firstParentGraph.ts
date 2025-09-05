@@ -13,6 +13,14 @@ interface CommitItem {
   parents: string[]; // length > 1 => merge commit
 }
 
+// Cache folded results per merge commit
+type FoldedCache = Map<string, FoldedSection[]>;
+
+interface FoldedSection {
+  parentSha: string; // non-first parent sha
+  commits: CommitItem[]; // oldest -> newest along ancestry path
+}
+
 /** Picks a repo root directory, preferring the built-in Git extension if present. */
 export async function pickRepositoryRoot(): Promise<string | undefined> {
   // Prefer the built-in Git extension (if available)
@@ -66,7 +74,7 @@ export function headFileWatcher(
 
 /** Tree Data Provider */
 export class FirstParentProvider
-  implements vscode.TreeDataProvider<CommitTreeItem>
+  implements vscode.TreeDataProvider<vscode.TreeItem>
 {
   private _onDidChangeTreeData = new vscode.EventEmitter<
     CommitTreeItem | undefined | void
@@ -74,9 +82,12 @@ export class FirstParentProvider
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   private commits: CommitItem[] = [];
+  private foldedCache: FoldedCache = new Map();
+
   constructor(public readonly repoRoot?: string) {}
 
   refresh() {
+    this.load().finally(() => this._onDidChangeTreeData.fire());
     this.load().finally(() => this._onDidChangeTreeData.fire());
   }
 
@@ -111,32 +122,127 @@ export class FirstParentProvider
     return element;
   }
 
-  getChildren(element?: CommitTreeItem): Thenable<CommitTreeItem[]> {
-    if (element) return Promise.resolve([]);
-    const items = this.commits.map((c) => {
-      const isMerge = c.parents.length > 1;
-      const label = `${c.subject}`;
-      const description = `${c.author} — ${c.date}`;
-      const item = new CommitTreeItem(label, description, c);
-      item.iconPath = new vscode.ThemeIcon(
-        isMerge ? "git-merge" : "git-commit"
+  async getChildren(element?: CommitTreeItem): Promise<vscode.TreeItem[]> {
+    console.log("ELEMENT", element);
+
+    if (!element) {
+      return this.commits.map((c) => {
+        const isMerge = c.parents.length > 1;
+        const label = `${c.subject}`;
+        const description = `${c.author} — ${c.date}`;
+        const item = new CommitTreeItem(
+          label,
+          description,
+          c,
+          isMerge
+            ? vscode.TreeItemCollapsibleState.Collapsed
+            : vscode.TreeItemCollapsibleState.None
+        );
+        item.iconPath = new vscode.ThemeIcon(
+          isMerge ? "git-merge" : "git-commit"
+        );
+        item.tooltip = [
+          `$(git-commit) ${c.sha}`,
+          isMerge
+            ? `$(git-merge) Merge commit (parents: ${c.parents.length})`
+            : `Parent(s): ${c.parents.length}`,
+          `Author: ${c.author}`,
+          `Date: ${c.date}`,
+        ].join("\n");
+
+        // We can add a command on click on the element
+        // item.command = {
+        //   command: "reviews.firstParentGraph.showCommit",
+        //   title: "Show Commit",
+        //   arguments: [item],
+        // };
+        return item;
+      });
+    }
+
+    // Expanding a merge node -> show headers for each non-first parent (or directly the commits)
+    if (
+      element instanceof CommitTreeItem &&
+      element.commit.parents.length > 1
+    ) {
+      const merge = element.commit;
+      const sections = await this.getFoldedSections(merge);
+      // If only one extra parent, you can show its commits directly (optional).
+      if (sections.length === 1) {
+        const s = sections[0];
+        return [
+          new ParentHeaderItem(merge.sha, s.parentSha, s.commits.length),
+          // alternatively, return s.commits.map(c => new FoldedCommitItem(c))
+        ];
+      }
+      // Multiple parents -> one header per parent
+      return sections.map(
+        (s) => new ParentHeaderItem(merge.sha, s.parentSha, s.commits.length)
       );
-      item.tooltip = [
-        `$(git-commit) ${c.sha}`,
-        isMerge
-          ? `$(git-merge) Merge commit (parents: ${c.parents.length})`
-          : `Parent(s): ${c.parents.length}`,
-        `Author: ${c.author}`,
-        `Date: ${c.date}`,
-      ].join("\n");
-      item.command = {
-        command: "reviews.firstParentGraph.showCommit",
-        title: "Show Commit",
-        arguments: [item],
-      };
-      return item;
-    });
-    return Promise.resolve(items);
+    }
+
+    // Expanding a parent header -> show folded commits for that parent
+    if (element instanceof ParentHeaderItem) {
+      const sections = await this.getFoldedSectionsByMergeSha(element.mergeSha);
+      const section = sections.find((s) => s.parentSha === element.parentSha);
+      if (!section) return [];
+      return section.commits.map((c) => new FoldedCommitItem(c));
+    }
+
+    return [];
+  }
+
+  private async getFoldedSections(merge: CommitItem): Promise<FoldedSection[]> {
+    const cached = this.foldedCache.get(merge.sha);
+    if (cached) return cached;
+
+    const sections: FoldedSection[] = [];
+    const [firstParent, ...others] = merge.parents;
+    if (!this.repoRoot || !firstParent || others.length === 0) {
+      this.foldedCache.set(merge.sha, sections);
+      return sections;
+    }
+
+    for (const parent of others) {
+      try {
+        // Find merge-base with first parent
+        const mergeBase = (
+          await execGit(["merge-base", firstParent, parent], this.repoRoot)
+        ).trim();
+        if (!mergeBase) continue;
+
+        // Walk commits along the ancestry path from the merge-base to the non-first parent
+        const fmt = ["%H", "%P", "%s", "%an", "%ad"].join("%x1f") + "%x1e";
+        const out = await execGit(
+          [
+            "log",
+            "--pretty=format:" + fmt,
+            "--date=iso",
+            "--topo-order",
+            "--ancestry-path",
+            "--reverse",
+            `${mergeBase}..${parent}`,
+          ],
+          this.repoRoot
+        );
+        const commits = parseLog(out);
+
+        sections.push({ parentSha: parent, commits });
+      } catch {
+        // Ignore failures for a parent; keep going
+      }
+    }
+
+    this.foldedCache.set(merge.sha, sections);
+    return sections;
+  }
+
+  private async getFoldedSectionsByMergeSha(
+    mergeSha: string
+  ): Promise<FoldedSection[]> {
+    const found = this.commits.find((c) => c.sha === mergeSha);
+    if (!found) return [];
+    return this.getFoldedSections(found);
   }
 }
 
@@ -144,11 +250,57 @@ export class CommitTreeItem extends vscode.TreeItem {
   constructor(
     label: string,
     description: string,
-    public readonly commit: CommitItem
+    public readonly commit: CommitItem,
+    collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    super(label, vscode.TreeItemCollapsibleState.None);
+    super(label, collapsibleState);
     this.description = description;
-    this.contextValue = "firstParentCommit";
+    const isMerge = commit.parents.length > 1;
+    this.contextValue = isMerge ? "firstParentMerge" : "firstParentCommit";
+    this.iconPath = new vscode.ThemeIcon(isMerge ? "git-merge" : "git-commit");
+    this.tooltip = [
+      `$(git-commit) ${commit.sha}`,
+      isMerge
+        ? `$(git-merge) Merge commit (parents: ${commit.parents.length})`
+        : `Parent(s): ${commit.parents.length}`,
+      `Author: ${commit.author}`,
+      `Date: ${commit.date}`,
+    ].join("\n");
+  }
+}
+
+class ParentHeaderItem extends vscode.TreeItem {
+  constructor(
+    public readonly mergeSha: string,
+    public readonly parentSha: string,
+    public readonly count: number
+  ) {
+    super(
+      `Parent ${parentSha.slice(0, 7)} — ${count} commit${
+        count === 1 ? "" : "s"
+      }`,
+      vscode.TreeItemCollapsibleState.Collapsed
+    );
+    this.contextValue = "firstParentHeader";
+    this.iconPath = new vscode.ThemeIcon("git-branch");
+    this.tooltip = `Commits merged from parent ${parentSha}`;
+  }
+}
+
+class FoldedCommitItem extends vscode.TreeItem {
+  constructor(public readonly commit: CommitItem) {
+    super(`${commit.subject}`, vscode.TreeItemCollapsibleState.None);
+    this.description = `${commit.author} — ${commit.date}`;
+    this.contextValue = "firstParentFoldedCommit";
+    this.iconPath = new vscode.ThemeIcon(
+      commit.parents.length > 1 ? "git-merge" : "git-commit"
+    );
+    this.command = {
+      command: "firstParentGraph.showCommit",
+      title: "Show Commit",
+      arguments: [this],
+    };
+    this.tooltip = `$(git-commit) ${commit.sha}\nAuthor: ${commit.author}\nDate: ${commit.date}`;
   }
 }
 
