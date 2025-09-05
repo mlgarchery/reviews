@@ -2,6 +2,13 @@
 // Import the module and reference it with the alias vscode in your code below
 import { execSync } from "child_process";
 import * as vscode from "vscode";
+import {
+  CommitTreeItem,
+  FirstParentProvider,
+  execGit,
+  headFileWatcher,
+  pickRepositoryRoot,
+} from "./firstParentGraph";
 
 export const parseBranchNames = (
   input: string | undefined,
@@ -124,7 +131,7 @@ const resetBranch = async (
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
   // console.log('reviews extension is active for the first time');
@@ -193,6 +200,56 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(compareDisposable);
   context.subscriptions.push(resetDisposable);
+
+  // First parent graph view
+  const repoRoot = await pickRepositoryRoot();
+  const provider = new FirstParentProvider(repoRoot);
+  // Register the TreeDataProvider for our SCM view
+  vscode.window.registerTreeDataProvider("reviews.firstParentGraph", provider);
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("reviews.firstParentGraph.refresh", () =>
+      provider.refresh()
+    ),
+    vscode.commands.registerCommand(
+      "reviews.firstParentGraph.copySha",
+      (node: CommitTreeItem) => {
+        if (node?.commit?.sha) {
+          vscode.env.clipboard.writeText(node.commit.sha);
+          vscode.window.setStatusBarMessage(
+            `Copied ${node.commit.sha.slice(0, 12)} to clipboard`,
+            2000
+          );
+        }
+      }
+    ),
+    vscode.commands.registerCommand(
+      "reviews.firstParentGraph.showCommit",
+      async (node: CommitTreeItem) => {
+        if (!node?.commit?.sha) return;
+        try {
+          const out = await execGit(
+            ["show", "--date=iso", "--stat", node.commit.sha],
+            provider.repoRoot
+          );
+          const doc = await vscode.workspace.openTextDocument({
+            content: out,
+            language: "diff",
+          });
+          await vscode.window.showTextDocument(doc, { preview: true });
+        } catch (e: any) {
+          vscode.window.showErrorMessage(`git show failed: ${e?.message ?? e}`);
+        }
+      }
+    )
+  );
+
+  // Watch HEAD for changes to auto-refresh
+  const headWatcher = headFileWatcher(repoRoot, () => provider.refresh());
+  context.subscriptions.push(headWatcher);
+
+  // Initial load
+  provider.refresh();
 }
 
 // This method is called when your extension is deactivated

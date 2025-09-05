@@ -17,6 +17,15 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "views": {
+      "scm": [
+        {
+          "icon": "",
+          "id": "reviews.firstParentGraph",
+          "name": "First-Parent Graph"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "reviews.compare",
@@ -25,8 +34,39 @@
       {
         "command": "reviews.reset",
         "title": "reviews: Reset branch"
+      },
+      {
+        "command": "reviews.firstParentGraph.refresh",
+        "title": "reviews: Refresh First-Parent Graph"
+      },
+      {
+        "command": "reviews.firstParentGraph.copySha",
+        "title": "review: Copy Commit SHA"
+      },
+      {
+        "command": "reviews.firstParentGraph.showCommit",
+        "title": "reviews: Show Commit (git show)"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "reviews.firstParentGraph.refresh",
+          "when": "view == reviews.firstParentGraph",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "reviews.firstParentGraph.copySha",
+          "when": "view == reviews.firstParentGraph"
+        },
+        {
+          "command": "reviews.firstParentGraph.showCommit",
+          "when": "view == reviews.firstParentGraph"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -47,5 +87,8 @@
     "eslint": "^8.54.0",
     "prettier": "^2.4.1",
     "typescript": "^5.3.2"
-  }
+  },
+  "extensionDependencies": [
+    "vscode.git"
+  ]
 }
