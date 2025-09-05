@@ -88,14 +88,13 @@ export class FirstParentProvider
     try {
       // --first-parent folds other-parent history by design; we still see the merge commit.
       // Using ASCII unit separators for robust parsing.
-      const format = ["%H", "%P", "%s", "%an", "%ad"].join("%x1f") + "%x1e";
+      const format = ["%H", "%P", "%s", "%an", "%cr"].join("%x1f") + "%x1e";
       const out = await execGit(
         [
           "log",
           "--first-parent",
           "--max-count=300",
           `--pretty=format:${format}`,
-          "--date=iso",
         ],
         this.repoRoot
       );
@@ -117,7 +116,7 @@ export class FirstParentProvider
     const items = this.commits.map((c) => {
       const isMerge = c.parents.length > 1;
       const label = `${c.subject}`;
-      const description = `${c.author} — ${new Date(c.date).toLocaleString()}`;
+      const description = `${c.author} — ${c.date}`;
       const item = new CommitTreeItem(label, description, c);
       item.iconPath = new vscode.ThemeIcon(
         isMerge ? "git-merge" : "git-commit"
@@ -176,8 +175,8 @@ export function parseLog(raw: string): CommitItem[] {
     .map((r) => r.trim())
     .filter(Boolean);
   return records.map((rec) => {
-    const [h, p, s, an, ad] = rec.split("\x1f");
+    const [h, p, s, an, cr] = rec.split("\x1f");
     const parents = (p || "").trim() ? p.trim().split(/\s+/) : [];
-    return { sha: h, subject: s, author: an, date: ad, parents };
+    return { sha: h, subject: s, author: an, date: cr, parents };
   });
 }
