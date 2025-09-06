@@ -358,7 +358,7 @@ async function inferBaseRef(cwd?: string): Promise<string | undefined> {
     ).trim();
     if (head && (await refExists(head, cwd))) return head;
   } catch {
-    console.error("Couldn't find the repob base branch ! defaultinf on 'main'");
+    console.error("Couldn't find the repo base branch ! defaulting on 'main'");
   }
 
   // 2) Common fallbacks
