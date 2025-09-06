@@ -46,27 +46,48 @@ export async function pickRepositoryRoot(): Promise<string | undefined> {
   return undefined;
 }
 
-/** Simple watcher for .git/HEAD changes to refresh the view. */
 export function headFileWatcher(
   repoRoot: Maybe<string>,
   onChange: () => void
 ): vscode.FileSystemWatcher | { dispose(): void } {
   if (!repoRoot) return { dispose() {} };
-  const headUri = vscode.Uri.file(path.join(repoRoot, ".git", "HEAD"));
-  // Watch both HEAD and refs, as HEAD may be a symbolic ref
-  const watcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(path.join(repoRoot, ".git"), "**/*")
+  const dotGit = path.join(repoRoot, ".git");
+  let gitDir = dotGit;
+  try {
+    const st = fs.statSync(dotGit);
+    if (!st.isDirectory()) {
+      // .git is a file → parse "gitdir: <path>"
+      const contents = fs.readFileSync(dotGit, "utf8");
+      const m = contents.match(/gitdir:\s*(.+)\s*$/i);
+      if (m) {
+        gitDir = path.isAbsolute(m[1]) ? m[1] : path.resolve(repoRoot, m[1]);
+      }
+    }
+  } catch {
+    // Fall back silently if .git isn’t accessible
+  }
+
+  const headWatcher = vscode.workspace.createFileSystemWatcher(
+    new vscode.RelativePattern(gitDir, "HEAD")
   );
-  watcher.onDidChange((uri) => {
-    if (
-      uri.fsPath === headUri.fsPath ||
-      uri.fsPath.includes(path.sep + "refs" + path.sep)
-    )
-      onChange();
-  });
-  watcher.onDidCreate(onChange);
-  watcher.onDidDelete(onChange);
-  return watcher;
+  const refsWatcher = vscode.workspace.createFileSystemWatcher(
+    new vscode.RelativePattern(gitDir, "refs/**")
+  );
+
+  const handler = () => onChange();
+  headWatcher.onDidChange(handler);
+  headWatcher.onDidCreate(handler);
+  headWatcher.onDidDelete(handler);
+  refsWatcher.onDidChange(handler);
+  refsWatcher.onDidCreate(handler);
+  refsWatcher.onDidDelete(handler);
+
+  return {
+    dispose() {
+      headWatcher.dispose();
+      refsWatcher.dispose();
+    },
+  };
 }
 
 /** Tree Data Provider */
