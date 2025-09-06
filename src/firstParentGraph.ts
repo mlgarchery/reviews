@@ -317,7 +317,7 @@ class FoldedCommitItem extends vscode.TreeItem {
 /** Exec git and return stdout as string. */
 export function execGit(args: string[], cwd?: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = execFile(
+    execFile(
       "git",
       args,
       { cwd, timeout: 20000, maxBuffer: 10 * 1024 * 1024 },

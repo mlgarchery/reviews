@@ -51,23 +51,19 @@
       },
       {
         "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
-        "title": "Toggle: Only Commits Not On Base",
-        "when": "false"
+        "title": "Toggle: Only Commits Not On Base"
       },
       {
         "command": "reviews.firstParentGraph.refresh",
-        "title": "Refresh First-Parent Graph",
-        "when": "false"
+        "title": "Refresh First-Parent Graph"
       },
       {
         "command": "reviews.firstParentGraph.copySha",
-        "title": "Copy Commit SHA",
-        "when": "false"
+        "title": "Copy Commit SHA"
       },
       {
         "command": "reviews.firstParentGraph.showCommit",
-        "title": "Show Commit (git show)",
-        "when": "false"
+        "title": "Show Commit (git show)"
       }
     ],
     "menus": {
@@ -86,6 +82,24 @@
         {
           "command": "reviews.firstParentGraph.showCommit",
           "when": "view == reviews.firstParentGraph"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
+          "when": "false"
+        },
+        {
+          "command": "reviews.firstParentGraph.refresh",
+          "when": "false"
+        },
+        {
+          "command": "reviews.firstParentGraph.copySha",
+          "when": "false"
+        },
+        {
+          "command": "reviews.firstParentGraph.showCommit",
+          "when": "false"
         }
       ]
     }
