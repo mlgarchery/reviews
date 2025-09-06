@@ -21,7 +21,6 @@ export const parseBranchNames = (
   if (!compareToBranch) {
     compareToBranch = "main";
   }
-  console.log(branch, compareToBranch);
   return [branch, compareToBranch];
 };
 
