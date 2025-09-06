@@ -17,6 +17,29 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "properties": {
+        "firstParentGraph.baseBranch": {
+          "type": "string",
+          "default": "auto",
+          "description": "Base branch to compare against (e.g., 'main', 'origin/main'). 'auto' tries origin/HEAD → origin/main → main → origin/master → master."
+        },
+        "firstParentGraph.onlyBranchCommitsByDefault": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show only commits not on the base branch by default."
+        }
+      }
+    },
+    "views": {
+      "scm": [
+        {
+          "icon": "",
+          "id": "reviews.firstParentGraph",
+          "name": "First-Parent Graph"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "reviews.compare",
@@ -25,8 +48,61 @@
       {
         "command": "reviews.reset",
         "title": "reviews: Reset branch"
+      },
+      {
+        "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
+        "title": "Toggle: Only Commits Not On Base"
+      },
+      {
+        "command": "reviews.firstParentGraph.refresh",
+        "title": "Refresh First-Parent Graph"
+      },
+      {
+        "command": "reviews.firstParentGraph.copySha",
+        "title": "Copy Commit SHA"
+      },
+      {
+        "command": "reviews.firstParentGraph.showCommit",
+        "title": "Show Commit (git show)"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
+          "when": "view == reviews.firstParentGraph",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "reviews.firstParentGraph.copySha",
+          "when": "view == reviews.firstParentGraph"
+        },
+        {
+          "command": "reviews.firstParentGraph.showCommit",
+          "when": "view == reviews.firstParentGraph"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
+          "when": "false"
+        },
+        {
+          "command": "reviews.firstParentGraph.refresh",
+          "when": "false"
+        },
+        {
+          "command": "reviews.firstParentGraph.copySha",
+          "when": "false"
+        },
+        {
+          "command": "reviews.firstParentGraph.showCommit",
+          "when": "false"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -47,5 +123,8 @@
     "eslint": "^8.54.0",
     "prettier": "^2.4.1",
     "typescript": "^5.3.2"
-  }
+  },
+  "extensionDependencies": [
+    "vscode.git"
+  ]
 }
