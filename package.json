@@ -51,7 +51,8 @@
       },
       {
         "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
-        "title": "Toggle: Only Commits Not On Base"
+        "title": "Toggle: Only Commits Not On Base",
+        "when": "false"
       },
       {
         "command": "reviews.firstParentGraph.refresh",

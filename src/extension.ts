@@ -245,8 +245,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "reviews.firstParentGraph.toggleOnlyBranchCommits",
       async () => {
-        provider["onlyBranch"] = !provider["onlyBranch"];
-        const mode = provider["onlyBranch"] ? "ON" : "OFF";
+        const mode = provider.toggleOnlyBranch() ? "ON" : "OFF";
         vscode.window.setStatusBarMessage(`Only-branch filter: ${mode}`, 2000);
         await provider.refresh();
       }

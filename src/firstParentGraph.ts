@@ -87,6 +87,11 @@ export class FirstParentProvider
 
   constructor(public readonly repoRoot?: string) {}
 
+  public toggleOnlyBranch(): boolean {
+    this.onlyBranch = !this.onlyBranch;
+    return this.onlyBranch;
+  }
+
   async refresh() {
     this.foldedCache.clear();
     await this.load();
@@ -312,16 +317,15 @@ class FoldedCommitItem extends vscode.TreeItem {
 /** Exec git and return stdout as string. */
 export function execGit(args: string[], cwd?: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = execFile("git", args, { cwd }, (err, stdout, stderr) => {
-      if (err) return reject(new Error(stderr || err.message));
-      resolve(stdout);
-    });
-    // Just in case: kill long-running in odd environments
-    setTimeout(() => {
-      try {
-        child.kill();
-      } catch {}
-    }, 20000);
+    const child = execFile(
+      "git",
+      args,
+      { cwd, timeout: 20000, maxBuffer: 10 * 1024 * 1024 },
+      (err, stdout, stderr) => {
+        if (err) return reject(new Error(stderr || err.message));
+        resolve(stdout);
+      }
+    );
   });
 }
 
