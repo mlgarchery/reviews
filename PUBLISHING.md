@@ -1,19 +1,9 @@
 ## PUBLISHING
 
-`npm install -g @vscode/vsce`
+`npm install -g @vscode/vsce` is needed
 
-```
-vsce publish
-```
+Run `npm run pretest && npm run test`: fix any issue found here and retry until there is none.
 
-login first if needed
+Then do `vsce publish`.
 
-```
-vsce login <publisher>
-```
-
-publisher is mlgarchery here and then you need to provide the personal access token
-
-```
-
-```
+- Login first if needed with `vsce login <publisher>`, where`publisher` is mlgarchery here and then you need to provide the personal access token
