@@ -244,16 +244,14 @@ export class FirstParentProvider
         ).trim();
         if (!mergeBase) continue;
 
-        // Walk commits along the ancestry path from the merge-base to the non-first parent
-        const fmt = ["%H", "%P", "%s", "%an", "%ad"].join("%x1f") + "%x1e";
+        // Walk commits from the merge-base to the non-first parent
+        const format = ["%H", "%P", "%s", "%an", "%cr"].join("%x1f") + "%x1e";
         const out = await execGit(
           [
             "log",
-            "--pretty=format:" + fmt,
-            "--date=iso",
             "--topo-order",
-            "--ancestry-path",
-            "--reverse",
+            "--max-count=300",
+            `--pretty=format:${format}`,
             `${mergeBase}..${parent}`,
           ],
           this.repoRoot
@@ -360,7 +358,7 @@ async function inferBaseRef(cwd?: string): Promise<string | undefined> {
     ).trim();
     if (head && (await refExists(head, cwd))) return head;
   } catch {
-    return "main";
+    console.error("Couldn't find the repob base branch ! defaultinf on 'main'");
   }
 
   // 2) Common fallbacks
