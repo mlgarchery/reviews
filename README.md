@@ -37,6 +37,12 @@ Two commands are available:
 
 ## Release Notes
 
+### 0.4.0
+
+- Added the First-Parent Graph view in the source control tab. It shows only the commits on the current branch up to the base branch (default is 'main'), folding the commits from merges, which is handy to have a quick view of the PR commits, even in the case of a complex git history.
+
+![first parent graph view example](/images/first-parent-graph-view.png)
+
 ### 0.3.5
 
 - reverting to switching to branch instead of "branch prior to comparison", as the staged changes were kept after the reset.
