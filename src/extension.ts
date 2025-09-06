@@ -208,9 +208,6 @@ export async function activate(context: vscode.ExtensionContext) {
   vscode.window.registerTreeDataProvider("reviews.firstParentGraph", provider);
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("reviews.firstParentGraph.refresh", () =>
-      provider.refresh()
-    ),
     vscode.commands.registerCommand(
       "reviews.firstParentGraph.copySha",
       (node: CommitTreeItem) => {
@@ -240,14 +237,6 @@ export async function activate(context: vscode.ExtensionContext) {
         } catch (e: any) {
           vscode.window.showErrorMessage(`git show failed: ${e?.message ?? e}`);
         }
-      }
-    ),
-    vscode.commands.registerCommand(
-      "reviews.firstParentGraph.toggleOnlyBranchCommits",
-      async () => {
-        const mode = provider.toggleOnlyBranch() ? "ON" : "OFF";
-        vscode.window.setStatusBarMessage(`Only-branch filter: ${mode}`, 2000);
-        await provider.refresh();
       }
     )
   );

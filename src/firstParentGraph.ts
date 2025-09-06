@@ -101,18 +101,9 @@ export class FirstParentProvider
 
   private commits: CommitItem[] = [];
   private foldedCache: Map<string, FoldedSection[]> = new Map();
-  private onlyBranch = vscode.workspace
-    .getConfiguration("firstParentGraph")
-    .get<boolean>("onlyBranchCommitsByDefault", true);
   private baseRef: string | undefined;
 
   constructor(public readonly repoRoot?: string) {}
-
-  public toggleOnlyBranch(): boolean {
-    this.onlyBranch = !this.onlyBranch;
-    return this.onlyBranch;
-  }
-
   async refresh() {
     this.foldedCache.clear();
     await this.load();
@@ -129,6 +120,7 @@ export class FirstParentProvider
     const cfgBase = vscode.workspace
       .getConfiguration("firstParentGraph")
       .get<string>("baseBranch", "auto");
+
     this.baseRef =
       cfgBase && cfgBase !== "auto"
         ? cfgBase
@@ -145,10 +137,9 @@ export class FirstParentProvider
 
       // Use an output channel for debugging in VSCode:
       // const outputChannel = vscode.window.createOutputChannel("reviews");
-      // outputChannel.appendLine("ONLYBRANCH:" + this.onlyBranch);
       // outputChannel.appendLine("baseRef:" + this.baseRef);
 
-      if (this.onlyBranch && this.baseRef) {
+      if (this.baseRef) {
         args.push(`${this.baseRef}..HEAD`);
       }
 
@@ -170,15 +161,10 @@ export class FirstParentProvider
     if (!element) {
       if (this.commits.length === 0) {
         const msg = new vscode.TreeItem(
-          this.onlyBranch
-            ? `No commits unique to ${this.baseRef ?? "base"}`
-            : "No commits found",
+          `No commits unique to this branch compared to the base (${this.baseRef}) were found`,
           vscode.TreeItemCollapsibleState.None
         );
         msg.iconPath = new vscode.ThemeIcon("info");
-        msg.tooltip = this.onlyBranch
-          ? "Switch off the base filter to see full first-parent history."
-          : undefined;
         return [msg];
       }
 

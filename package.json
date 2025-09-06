@@ -23,11 +23,6 @@
           "type": "string",
           "default": "auto",
           "description": "Base branch to compare against (e.g., 'main', 'origin/main'). 'auto' tries origin/HEAD → origin/main → main → origin/master → master."
-        },
-        "firstParentGraph.onlyBranchCommitsByDefault": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show only commits not on the base branch by default."
         }
       }
     },
@@ -50,14 +45,6 @@
         "title": "reviews: Reset branch"
       },
       {
-        "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
-        "title": "Toggle: Only Commits Not On Base"
-      },
-      {
-        "command": "reviews.firstParentGraph.refresh",
-        "title": "Refresh First-Parent Graph"
-      },
-      {
         "command": "reviews.firstParentGraph.copySha",
         "title": "Copy Commit SHA"
       },
@@ -67,13 +54,7 @@
       }
     ],
     "menus": {
-      "view/title": [
-        {
-          "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
-          "when": "view == reviews.firstParentGraph",
-          "group": "navigation@2"
-        }
-      ],
+      "view/title": [],
       "view/item/context": [
         {
           "command": "reviews.firstParentGraph.copySha",
@@ -85,14 +66,6 @@
         }
       ],
       "commandPalette": [
-        {
-          "command": "reviews.firstParentGraph.toggleOnlyBranchCommits",
-          "when": "false"
-        },
-        {
-          "command": "reviews.firstParentGraph.refresh",
-          "when": "false"
-        },
         {
           "command": "reviews.firstParentGraph.copySha",
           "when": "false"
