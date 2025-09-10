@@ -52,7 +52,8 @@ export function headFileWatcher(
 ): vscode.FileSystemWatcher | { dispose(): void } {
   if (!repoRoot) return { dispose() {} };
   const dotGit = path.join(repoRoot, ".git");
-  let gitDir = dotGit;
+  let headDir = dotGit;
+  let refsDir = dotGit;
   try {
     const st = fs.statSync(dotGit);
     if (!st.isDirectory()) {
@@ -60,7 +61,21 @@ export function headFileWatcher(
       const contents = fs.readFileSync(dotGit, "utf8");
       const m = contents.match(/gitdir:\s*(.+)\s*$/i);
       if (m) {
-        gitDir = path.isAbsolute(m[1]) ? m[1] : path.resolve(repoRoot, m[1]);
+        const resolvedGitDir = path.isAbsolute(m[1])
+          ? m[1]
+          : path.resolve(repoRoot, m[1]);
+        headDir = resolvedGitDir;
+        // Try resolvedGitDir/refs first
+        let candidateRefs = path.join(resolvedGitDir, "refs");
+        if (fs.existsSync(candidateRefs)) {
+          refsDir = resolvedGitDir;
+        } else {
+          // Try ../../refs from the worktree gitdir
+          const parentRefs = path.resolve(resolvedGitDir, "../..", "refs");
+          if (fs.existsSync(parentRefs)) {
+            refsDir = path.resolve(resolvedGitDir, "../..");
+          }
+        }
       }
     }
   } catch {
@@ -68,10 +83,10 @@ export function headFileWatcher(
   }
 
   const headWatcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(gitDir, "HEAD")
+    new vscode.RelativePattern(headDir, "HEAD")
   );
   const refsWatcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(gitDir, "refs/**")
+    new vscode.RelativePattern(refsDir, "refs/**")
   );
 
   const handler = () => onChange();
