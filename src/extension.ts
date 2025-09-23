@@ -109,7 +109,9 @@ const resetBranch = async (
   context: vscode.ExtensionContext,
   showMessage: boolean = false
 ) => {
-  const branch = context.workspaceState.get("branch");
+  // remove the "origin/" prefix from the branch name
+  let branch = context.workspaceState.get("branch");
+  if (typeof branch === "string") branch = branch.replace("origin/", "");
 
   if (!branch) {
     if (showMessage) {
