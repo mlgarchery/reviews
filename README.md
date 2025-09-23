@@ -37,6 +37,10 @@ Two commands are available:
 
 ## Release Notes
 
+### 0.4.2
+
+- Remove `origin/` prefix before `git switch` if any
+
 ### 0.4.1
 
 - First parent graph works for git worktree
